@@ -90,7 +90,13 @@ function printRemovedGuests()
     end
 end 
 
--- Decode guests list JSON stored in a local (existent) file, bringing it to var guests.
+-- Decode guests list JSON stored in a local (existent) file PATH_STORAGE, bringing it to var guests.
+-- README
+--  For some reason, the script enters an undefined loop if the files doesn't even exist, so I created
+--  an empty file. There's a function in this script that can clear or create a clared file in the same path.
+-- RETURN
+--  true  : boolean if it could find, load and decode json file
+--  false : boolean if something went wrong (it will likely throw a fatal error) or the file was empty
 function loadDataFromFile()
     file = io.open(PATH_STORAGE, "r")
 
@@ -109,7 +115,10 @@ function loadDataFromFile()
     return true
 end
 
--- Encode guests list into a JSON and stores it in a local file.
+-- Encode guests list into a JSON and stores it in a local file PATH_STORAGE.
+-- RETURN
+--  true  : boolean if it could encode guests list and save it in the file
+--  false : boolean if something went wrong (likely will throw a fatal error)
 function saveDataInFile()
     file = io.open(PATH_STORAGE, "w")
 
@@ -125,6 +134,8 @@ function saveDataInFile()
 end
 
 -- Try to create an empty file or clear all data in the existent path 
+--  true  : boolean if it could save the file
+--  false : boolean if something went wrong (likely will throw a fatal error)
 function createOrClearFile()
     file = io.open(PATH_STORAGE, "w")
 
