@@ -1,4 +1,6 @@
 
+-- Implements: https://github.com/BugginhoDeveloper/mini-projeto-1-lua/blob/master/README.md
+
 -- Array of guests list and its length
 guests = { } -- numeric array [number] { name: string, cpf: string, isRemoved: string }
 guestsLen = 0 -- zero ins't an avaiable index (lua pattern)
@@ -9,8 +11,12 @@ guestsLen = 0 -- zero ins't an avaiable index (lua pattern)
 --  cpf  : string valid personal ID (t: cadastro de pessoa física) formatted as XXX.XXX.XXX-XX
 -- RETURN
 --  true  : boolean if it worked
---  false : boolean if something went wrong, like cpf already exists (TODO)
+--  false : boolean if cpf already exists or if there's an empty param
 function addGuest(name, cpf)
+    if (findGuestByCPF(cpf) or cpf=="" or name=="") then
+        return false
+    end
+    
     local guest = {
         ['name'] = name,
         ['cpf'] = cpf,
@@ -33,11 +39,9 @@ end
 function removeGuest(cpf, reason)
     local guest = findGuestByCPF(cpf)
     
-    if (guest) then
-        if not(guest.isRemoved) then
-            guest.isRemoved = reason
-            return true
-        end
+    if (guest and not(guest.isRemoved)) then
+        guest.isRemoved = reason
+        return true
     end
 
     return false
@@ -77,7 +81,12 @@ function printRemovedGuests()
     end
 end 
 
-addGuest("Marcell Guilherme", "000.000.00-11")
+
+
+
+-- TESTS
+
+addGuest("Marcell Guilherme", "000.000.000-11")
 addGuest("Yuri Henrique", "000.000.000-22")
 print("--> Added 2 guests: Marcell and his minion Yuri")
 printGuests()
@@ -90,7 +99,7 @@ printGuests()
 
 print()
 
-addGuest("Yuri Fake", "000.000.000-11")
+addGuest("Yuri Fake", "000.000.000-11") -- you shall not pass!
 addGuest("Italo Vieira", "000.000.000-33")
 print("--> Tried to add: Yuri (faking Marcell's CPF) and Italo (a regular non-nigga)")
 printGuests()
@@ -99,3 +108,7 @@ print()
 
 print("--> Printing removed guests and reasons...")
 printRemovedGuests()
+
+print()
+
+print("This ends our little journey.")
