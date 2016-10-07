@@ -32,10 +32,9 @@ function init()
     print("Trying to read "..PATH_STORAGE.." (if it doesn't work or it's taking too long, manually create an empty file in this path and/or check scripts permission level)...")
     print()
     if (loadDataFromFile()) then
-        print("Previous data found in our files and loaded.")
-        printGuests()
+        print("Previous data found in our files and LOADED.")
     else
-        print("There was no data to load. Maybe it's your first time here. Hello there, user!")
+        print("There was NO DATA to load. Maybe it's your first time here. Hello there, user!")
     end
 
     uiWait()
@@ -251,14 +250,15 @@ function loadDataFromFile()
     io.input(file)
 
     contentFound = io.read()
-    
+
     if (contentFound == "" or contentFound == nil) then
         io.close(file)
         createOrClearFile()
         return false
     end
 
-    guests = json.decode(contentFound)
+    guests    = json.decode(contentFound)
+    guestsLen = table.maxn(guests)
     io.close(file)
     return true
 end
