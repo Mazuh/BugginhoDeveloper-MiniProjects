@@ -7,11 +7,156 @@ json = require "lib/json"
 
 
 -- Array of guests list and its length
-guests = { } -- numeric array [number] { name: string, cpf: string, isRemoved: string }
+guests    = { } -- numeric array [number] { name: string, cpf: string, isRemoved: string }
 guestsLen = 0 -- zero ins't an avaiable index (lua pattern)
 
 -- local url to persist guests data
 PATH_STORAGE = "data/guests.json"
+
+-- OS inner codes
+WINDOWS = 1
+LINUX   = 2
+userOS  = 0 -- for user to select, this script will treat it as Linux by default (use constants for a valid option!)
+
+
+-- Do some stuff that should be done before run function, like check for OS and data storage file.
+function init()
+
+    print("Hi. Select your operational system...")
+    print("1 - Windows")
+    print("2 - Linux")
+    print("So, what's yours?")
+    userOS = io.stdin:read()
+
+    print()
+    print("Trying to read "..PATH_STORAGE.." (if it doesn't work or it's taking too long, manually create an empty file in this path and/or check scripts permission level)...")
+    print()
+    if (loadDataFromFile()) then
+        print("Previous data found in our files and loaded.")
+        printGuests()
+    else
+        print("There was no data to load. Maybe it's your first time here. Hello there, user!")
+    end
+
+    uiWait()
+end
+
+-- Run console user interface (for safety exec, call this only after init function)
+function run()
+    while (true) do
+        uiClear()
+        print("GUESTS LIST MANAGER\n\n"
+            .."Options:\n"
+            .."1 - show current guests list\n"
+            .."2 - add new guest\n"
+            .."3 - search guest by CPF\n"
+            .."4 - remove guest by CPF\n"
+            .."5 - show removed guests\n"
+            .."q - save and quit\n"
+            .."c - quit without saving\n"
+            .."x - destroy all current data")
+        print("What option number will you choose?")
+        option = io.stdin:read()
+
+        uiClear()
+
+        if (option == "c") then -- cancel
+            print("Just exiting. All your unsaved progress has been lost.")
+            os.exit()
+
+        elseif (option == "x") then -- destroy
+            print("Oh, a violent one! Trying to delete all data...")
+            if (createOrClearFile()) then
+                print("Your data has been destroyed.")
+            else
+                print("Sorry, couldn't be done.")
+            end
+
+        elseif (option == "q") then -- save n quit
+            print("Trying to save your list...")
+            if (saveDataInFile()) then
+                print("Saved!\nNow exiting...")
+                os.exit()
+            else
+                print("That's embarrassing, but something went wrong and your list couldn't be saved!")
+            end
+            
+        elseif (option == "1") then -- show list
+            print("Showing current guests list...")
+            printGuests()
+
+        elseif (option == "2") then -- add guest
+            print("Adding new guest...")
+            print("What's his full name?")
+            local inName = io.stdin:read()
+            print("What's his/her CPF?")
+            local inCpf = io.stdin:read()
+
+            if (addGuest(inName, inCpf)) then
+                print("Successfuly added!")
+            else
+                print("Something went wrong. Maybe his/her CPF has already been registered and/or has been removed.")
+            end
+        
+        elseif (option == "3") then -- search by CPF
+            print("Searching guest by CPF...")
+            print("What's his/her CPF?")
+            local inCpf = io.stdin:read()
+
+            local outGuest = findGuestByCPF(inCpf)
+
+            if (outGuest) then
+                print(outGuest.name)
+                if (outGuest.isRemoved) then
+                    print("Has been removed for: "..outGuest.isRemoved)
+                else
+                    print("Present in the current list.")
+                end
+            else
+                print("Sorry. It couldn't been found.")
+            end
+        
+        elseif (option == "4") then -- remove by CPF
+            print("Removing guest by CPF...")
+            print("What's his/her CPF?")
+            local inCpf = io.stdin:read()
+            print("Why?")
+            local inReason = io.stdin:read()
+            
+            if (removeGuest(inCpf, inReason)) then
+                print("This guest has been removed.")
+            else
+                print("Nope. Couldn't be done. Maybe this guest has been removed before and/or isn't in the list?")
+            end
+        
+        elseif (option == "5") then -- show removed guests
+            print("Showing removed guests...")
+            printRemovedGuests()
+
+        else -- idk...?
+            print("Sorry, I don't understand what you want!")
+
+        end
+
+        uiWait()
+
+    end
+end
+
+-- Clears console user interface
+function uiClear()
+    if (userOS == WINDOWS) then
+        os.execute("cls")
+    else
+        os.execute("clear")
+    end
+end
+
+-- Ask user to press Enter to continue and wait for it.
+function uiWait()
+    print("\nPress Enter to continue...")
+    io.stdin:read()
+end
 
 
 -- Create a new guest, add it to list and update the size number.
@@ -46,7 +191,10 @@ end
 --  true  : boolean if a guest was found and removed
 --  false : boolean if couldn't find this guest or he/she was already been removed
 function removeGuest(cpf, reason)
-    local guest = findGuestByCPF(cpf)
+    -- Interesting: this function doesnt copy guest element
+    -- but brings a reference for it, so modifying this local var also
+    -- will make changes in guests global list.
+    local guest = findGuestByCPF(cpf) 
     
     if (guest and not(guest.isRemoved)) then
         guest.isRemoved = reason
@@ -81,7 +229,7 @@ function printGuests()
     end
 end
 
--- Print all removed guests in format "Person Name (XXX.XXX.XXX-XX)" 
+-- Print all removed guests in format "Person Name (XXX.XXX.XXX-XX) - Removed for: Some reason" 
 function printRemovedGuests()
     for i=1, guestsLen do
         if (guests[i].isRemoved) then
@@ -151,47 +299,6 @@ function createOrClearFile()
 end
 
 
-
--- TESTS
-
-print("Trying to read "..PATH_STORAGE.." (if it doesn't work or it's taking too long, manually create an empty file in this path and/or check scripts permission level)...")
-if (loadDataFromFile()) then
-    print("Previous data found in our files and loaded.")
-    printGuests()
-else
-    print("There was no data to load.")
-end
-
-print()
-
-addGuest("Marcell Guilherme", "000.000.000-11")
-addGuest("Yuri Henrique", "000.000.000-22")
-print("--> Tried to add 2 guests: Marcell and his minion Yuri")
-printGuests()
-
-print()
-
-removeGuest("000.000.000-22", "For being noob")
-print("--> Removed: Yuri")
-printGuests()
-
-print()
-
-addGuest("Yuri Fake", "000.000.000-11") -- you shall not pass!
-addGuest("Italo Vieira", "000.000.000-33")
-print("--> Tried to add 2 guests: Yuri (faking Marcell's CPF) and Italo (a regular non-nigga)")
-printGuests()
-
-print()
-
-print("--> Printing removed guests and reasons...")
-printRemovedGuests()
-
-print()
-
-print("This ends our little journey. Trying to save...")
-saveDataInFile()
-
-print()
-
-print("Saved! See ya.")
+-- routine algorithms
+init()
+run()
