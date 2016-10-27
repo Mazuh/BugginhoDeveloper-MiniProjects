@@ -1,7 +1,4 @@
 
--- Implements: https://github.com/BugginhoDeveloper/mini-projeto-1-lua/blob/master/README.md
-
-
 -- dependencies...
 json = require "lib/json"
 
