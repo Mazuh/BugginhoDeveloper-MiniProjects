@@ -48,6 +48,30 @@ class User(object):
         """
         self.is_logged_in = self.password == self.str_to_hash(password_str)
         return self.is_logged_in
+    
+    
+    
+   def deposit(self, amount, another_user=None):
+        """ Deposit cash in this account or in another user's account.
+        If something goes wrong, a fatal error will be triggered.
+
+        Args:
+            amount        (num): amount of cash in R$ to deposit.
+            another_user (User): if it's depositing in another user account then
+                                 put its instance here, otherwise leave it as None.
+
+        Returns:
+            bool: True if operations has been a success, False otherwise.
+
+        """
+        if another_user:
+            another_user.deposit(amount)
+            return True
+        else:
+            self.balance += amount
+            return True
+
+        return False # never reached
 
 
 
