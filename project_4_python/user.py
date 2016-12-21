@@ -51,6 +51,28 @@ class User(object):
 
 
 
+    def transfer_to(self, amount, another_user):
+        """ Transfer an amount of cash from this user to another one.
+        This instance must have enough balance to do so.
+
+        Args:
+            amount       (num): Cash in R$ to discount from this instance user
+                                and to increase in another user account.
+            another_use (User): Another use to receive this transfering amount of cash.
+
+        Returns:
+            bool: True if cash has been transfered from this instance to another, False otherwise.
+
+        """
+        if self.balance >= amount:
+            self.balance -= amount
+            another_user.balance += amount
+            return True
+
+        return False
+
+
+
     def str_to_hash(self, param):
         """ Generate a hash of a string param using md5 algorithm
 
