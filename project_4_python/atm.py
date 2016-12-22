@@ -1,3 +1,8 @@
+""" Lib to manage an ATM (Automatic Teller Machine).
+Important classes: User, (future) Persistence.
+"""
+
+from datetime import datetime
 
 import hashlib
 
@@ -5,12 +10,19 @@ class User(object):
     """ Bank user. Can log in and do stuff or just act as a passive object.
     Another class must be used to persist these instances in local storage. """
 
+    ACTIONS = { # for later registration in history attribute
+        'TRANSFERING' : 'transfered', # money transfering between two users
+        'WITHDRAWING' : 'withdrawed', # withdraw own money
+        'RECEIVING' : 'received a deposit of', # depositing own money
+    }
+
     __agency = ''
     __account = ''
     __password = '' # md5
     __balance = 0
     __history = []
-    __is_logged_in = False
+
+    __is_logged_in = False # must not be persisted
 
 
 
@@ -61,17 +73,17 @@ class User(object):
                                  put its instance here, otherwise leave it as None.
 
         Returns:
-            bool: True if operations has been a success, False otherwise.
+            bool: True if operations has been a success ('unreturned' error otherwise).
 
         """
         if another_user:
             another_user.deposit(amount)
-            return True
+            self.register_operation(self.ACTIONS['TRANSFERING'], amount, another_user)
         else:
             self.__balance += amount
-            return True
+            self.register_operation(self.ACTIONS['RECEIVING'], amount)
 
-        return False # never reached
+        return True # False is never reached
 
 
 
@@ -92,6 +104,7 @@ class User(object):
         if self.__balance >= amount and self.__is_logged_in:
             self.__balance -= amount
             another_user.deposit(amount)
+            self.register_operation(self.ACTIONS['TRANSFERING'], amount, another_user)
             return True
 
         return False
@@ -115,6 +128,7 @@ class User(object):
         amount = PaperMoneyCounter().cash(qtt_100s, qtt_50s, qtt_20s)
         if (self.__is_logged_in) and (amount <= self.__balance) and (amount <= 1000):
             self.__balance -= amount
+            self.register_operation(self.ACTIONS['WITHDRAWING'], amount)
             return True
 
         return False
@@ -185,6 +199,35 @@ class User(object):
 
 
 
+    def register_operation(self, action, amount, user_to=None):
+        """ Register an operation, that this user is executing, in its own history list.
+
+        Args:
+            action   (str): An adequate value from ACTIONS dictionary attribute.
+            amount   (num): Amount of money being moved in this operation.
+            user_to (User): Another user as a target, eg: transfering money from this
+                            user to this argumented user.
+
+        Returns:
+            str: Builded operation string added to this user history,
+                 in format 'd/m/a - [account]/[agency] [action] R$[amount]'
+                 or 'd/m/a - [account1]/[agency1] [action] R$[amount] to [account2]/[agency2]'.
+
+        """
+        now = datetime.now()
+
+        register = str(now.day) + "/" + str(now.month) + "/" + str(now.year) + ' - '
+        register += self.__account + '/' + self.__agency
+        register += ' ' + action + ' R$' + str(amount)
+
+        if user_to:
+            register += ' to ' + user_to.get_account() + '/' + user_to.get_agency()
+
+        self.__history.append(register)
+        return register
+
+
+
     def str_to_hash(self, param):
         """ Generate a hash of a string param using md5 algorithm
 
@@ -250,6 +293,16 @@ class User(object):
         return self.__account
 
 
+
+    def get_history(self):
+        """ Get history of user's transactions.
+
+        Returns:
+            list: User's transaction strings.
+        """
+        return self.__history
+
+
 # ..............................................................
 
 
@@ -302,8 +355,3 @@ class PaperMoneyCounter(object):
         """ Return how much cash remains after using a maximum quantity of 20-real bills.
         """
         return amount % 20
-
-
-# ..............................................................
-
-
