@@ -5,16 +5,17 @@ class User(object):
     """ Bank user. Can log in and do stuff or just act as a passive object.
     Another class must be used to persist these instances in local storage. """
 
-    agency = ''
-    account = ''
-    password = '' # md5
-    balance = 0
-    history = []
+    __agency = ''
+    __account = ''
+    __password = '' # md5
+    __balance = 0
+    __history = []
+    __is_logged_in = False
 
-    is_logged_in = False
+
 
     def __init__(self, agency, account, password, balance=None, history=None):
-        """ Constructor. Highly limited actions while it's not logged in.
+        """ Constructor. Limited actions while it's not logged in.
 
         Args:
             agency   (str): Agency identification code.
@@ -23,21 +24,20 @@ class User(object):
             balance  (num): Balance in R$, put None if it's unknown.
             history (list): A list of balance transaction records, put None if it's unknown.
         """
-        self.agency = agency
-        self.account = account
-        self.password = password
+        self.__agency = agency
+        self.__account = account
+        self.__password = password
 
         if balance is not None:
-            self.balance = balance
+            self.__balance = balance
 
         if history is not None:
-            self.history = history
+            self.__history = history
 
 
 
     def log_in(self, password_str):
-        """ TODO
-        Access this existent bank account, authenticating by this password string.
+        """ Access this existent bank account, authenticating by this password string.
 
         Args:
             password_str (str): A password in natural language.
@@ -46,12 +46,12 @@ class User(object):
             bool: True if it was successfully authenticated, False otherwise.
 
         """
-        self.is_logged_in = self.password == self.str_to_hash(password_str)
-        return self.is_logged_in
-    
-    
-    
-   def deposit(self, amount, another_user=None):
+        self.__is_logged_in = self.__password == self.str_to_hash(password_str)
+        return self.__is_logged_in
+
+
+
+    def deposit(self, amount, another_user=None):
         """ Deposit cash in this account or in another user's account.
         If something goes wrong, a fatal error will be triggered.
 
@@ -68,7 +68,7 @@ class User(object):
             another_user.deposit(amount)
             return True
         else:
-            self.balance += amount
+            self.__balance += amount
             return True
 
         return False # never reached
@@ -78,6 +78,7 @@ class User(object):
     def transfer_to(self, amount, another_user):
         """ Transfer an amount of cash from this user to another one.
         This instance must have enough balance to do so.
+        This is a private method, that requires previous authentication.
 
         Args:
             amount       (num): Cash in R$ to discount from this instance user
@@ -88,9 +89,9 @@ class User(object):
             bool: True if cash has been transfered from this instance to another, False otherwise.
 
         """
-        if self.balance >= amount:
-            self.balance -= amount
-            another_user.balance += amount
+        if self.__balance >= amount and self.__is_logged_in:
+            self.__balance -= amount
+            another_user.deposit(amount)
             return True
 
         return False
@@ -100,6 +101,7 @@ class User(object):
     def withdraw_cash(self, qtt_100s, qtt_50s, qtt_20s):
         """ Withdraw cash. Those args should be obtained throught options_to_withdraw function.
         Also, there are two limits: R$1000,00 or the balance (the lower one).
+        This is a private method, that requires previous authentication.
 
         Args:
             qtt_100s (int): quantity of 100-real bills
@@ -111,8 +113,8 @@ class User(object):
 
         """
         amount = PaperMoneyCounter().cash(qtt_100s, qtt_50s, qtt_20s)
-        if amount <= self.balance and amount <= 1000:
-            self.balance -= amount
+        if (self.__is_logged_in) and (amount <= self.__balance) and (amount <= 1000):
+            self.__balance -= amount
             return True
 
         return False
@@ -202,7 +204,50 @@ class User(object):
     def hash_password(self):
         """ Hashes the password of this instance
         (it's supposed to be already hashed, but this function is nice in test environment). """
-        self.password = self.str_to_hash(self.password)
+        self.__password = self.str_to_hash(self.__password)
+
+
+
+    def is_logged_in(self):
+        """ Check if user has been authenticated.
+
+        Returns:
+            bool: True if is logged in, False otherwise.
+        """
+        return self.__is_logged_in
+
+
+
+    def get_balance(self):
+        """ Consult balance in R$.
+
+        Returns:
+            num: This user's balance, None for unauthorized operation.
+        """
+        if self.is_logged_in:
+            return self.__balance
+        else:
+            return None
+
+
+
+    def get_agency(self):
+        """ Get agency id.
+
+        Returns:
+            str: User's agency.
+        """
+        return self.__agency
+
+
+
+    def get_account(self):
+        """ Get account id.
+
+        Returns:
+            str: User's account.
+        """
+        return self.__account
 
 
 # ..............................................................
@@ -257,3 +302,8 @@ class PaperMoneyCounter(object):
         """ Return how much cash remains after using a maximum quantity of 20-real bills.
         """
         return amount % 20
+
+
+# ..............................................................
+
+
