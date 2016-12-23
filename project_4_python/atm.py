@@ -1,10 +1,12 @@
 """ Lib to manage an ATM (Automatic Teller Machine).
-Important classes: User, (future) Persistence.
+Important classes: User, Persistence.
 """
 
-from datetime import datetime
-
 import hashlib
+import sqlite3
+import os
+
+from datetime import datetime
 
 class User(object):
     """ Bank user. Can log in and do stuff or just act as a passive object.
@@ -246,7 +248,7 @@ class User(object):
 
     def hash_password(self):
         """ Hashes the password of this instance
-        (it's supposed to be already hashed, but this function is nice in test environment). """
+        (but... it's supposed to be already hashed!). """
         self.__password = self.str_to_hash(self.__password)
 
 
@@ -302,7 +304,6 @@ class User(object):
         """
         return self.__history
 
-
 # ..............................................................
 
 
@@ -355,3 +356,100 @@ class PaperMoneyCounter(object):
         """ Return how much cash remains after using a maximum quantity of 20-real bills.
         """
         return amount % 20
+
+
+# ..............................................................
+
+
+class Persistence(object):
+    """ Data manager for ATM bank accounts. """
+
+    __DB = 'users.db'
+
+    __users = {}
+
+
+    def __init__(self):
+        """ Create an instance of Persistence, and also try to execute
+        an initial script for db installation. """
+        if not self.is_installed():
+            self.install()
+
+
+
+    def install(self):
+        """ Initialize database, create tables and add few rows. """
+        conn = sqlite3.connect(self.__DB)
+        cursor = conn.cursor()
+
+        # creating tables...
+
+        cursor.execute('''
+        CREATE TABLE users (
+            id       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            agency   TEXT NOT NULL,
+            account  TEXT NOT NULL,
+            password TEXT NOT NULL,
+            balance  REAL NOT NULL
+        );
+        ''')
+
+        cursor.execute('''
+        CREATE TABLE history (
+            id       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            register TEXT NOT NULL,
+            owner    INTEGER NOT NULL
+        );
+        ''')
+
+        # inserting a few users by default (there's no sign up requirement for this app)...
+
+        hasher = User('', '', '')
+        users_data = [
+            ('A1', '00000-0', hasher.str_to_hash('pass0'), 1500),
+            ('A1', '11111-1', hasher.str_to_hash('pass1'), 400),
+            ('A2', '22222-2', hasher.str_to_hash('pass2'), 260),
+            ('A3', '33333-3', hasher.str_to_hash('pass3'), 380),
+            ('A2', '44444-4', hasher.str_to_hash('pass4'), 240),
+        ]
+
+        cursor.executemany('''
+        INSERT INTO users (agency, account, password, balance)
+        VALUES (?, ?, ?, ?)
+        ''', users_data)
+
+        conn.commit()
+        conn.close()
+
+        self.load_users()
+
+
+
+    def is_installed(self):
+        """ Returns: True if database file already exists, False otherwise.
+        Doesn't guarantee that this file really is a database, ie, a valid file. """
+        return os.path.isfile(self.__DB)
+
+
+
+    def update_users(self):
+        """ TODO: Update all current users in database using list attribute. """
+        conn = sqlite3.connect(self.__DB)
+
+        conn.close()
+
+
+
+    def load_users(self):
+        """ Load all database rows and put their data in list attribute. """
+        conn = sqlite3.connect(self.__DB)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+        SELECT * FROM users;
+        ''')
+
+        for row in cursor.fetchall():
+            self.__users[row[0]] = User(row[1], row[2], row[3], row[4])
+
+        conn.close()
