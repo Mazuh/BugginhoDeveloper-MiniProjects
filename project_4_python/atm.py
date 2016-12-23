@@ -433,9 +433,23 @@ class Persistence(object):
 
 
     def update_users(self):
-        """ TODO: Update all current users in database using list attribute. """
+        """ Update all current users balance and history in database using list attribute. """
         conn = sqlite3.connect(self.__DB)
+        cursor = conn.cursor()
 
+        users_data = []
+        for key, user in self.__users.items():
+            users_data.append((user.get_balance(), key))
+
+        cursor.executemany('''
+        UPDATE users
+        SET balance=?)
+        WHERE id=?
+        ''', users_data)
+
+        # TODO: update history, maybe using marks for uncommited registers in list.
+
+        conn.commit()
         conn.close()
 
 
@@ -451,5 +465,7 @@ class Persistence(object):
 
         for row in cursor.fetchall():
             self.__users[row[0]] = User(row[1], row[2], row[3], row[4])
+
+        # TODO: load history
 
         conn.close()
