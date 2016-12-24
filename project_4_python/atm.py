@@ -2,6 +2,7 @@
 Important classes: User, Persistence.
 """
 
+from decimal import Decimal
 import hashlib
 import sqlite3
 import os
@@ -15,7 +16,7 @@ class User(object):
     ACTIONS = { # for later registration in history attribute
         'TRANSFERING' : 'transfered', # money transfering between two users
         'WITHDRAWING' : 'withdrawed', # withdraw own money
-        'RECEIVING' : 'received a deposit of', # depositing own money
+        'RECEIVING' : 'received an amount of', # receiving money from anyone/anywhere
     }
 
     __agency = ''
@@ -88,9 +89,10 @@ class User(object):
         """
         if another_user:
             another_user.deposit(amount)
+            self.register_operation(self.ACTIONS['RECEIVING'], amount)
             self.register_operation(self.ACTIONS['TRANSFERING'], amount, another_user)
         else:
-            self.__balance += amount
+            self.__balance = float(Decimal(str(self.__balance + amount)))
             self.register_operation(self.ACTIONS['RECEIVING'], amount)
 
         return True # False is never reached
@@ -112,7 +114,7 @@ class User(object):
 
         """
         if self.__balance >= amount and self.__is_logged_in:
-            self.__balance -= amount
+            self.__balance = float(Decimal(str(self.__balance - amount)))
             another_user.deposit(amount)
             self.register_operation(self.ACTIONS['TRANSFERING'], amount, another_user)
             return True
@@ -137,7 +139,7 @@ class User(object):
         """
         amount = PaperMoneyCounter().cash(qtt_100s, qtt_50s, qtt_20s)
         if (self.__is_logged_in) and (amount <= self.__balance) and (amount <= 1000):
-            self.__balance -= amount
+            self.__balance = float(Decimal(str(self.__balance - amount)))
             self.register_operation(self.ACTIONS['WITHDRAWING'], amount)
             return True
 
@@ -156,8 +158,8 @@ class User(object):
             None: If the requirements to withdraw weren't accomplished.
             list: If the requeriments to withdraw were accomplished, a list in format
                   [[a, b, c], ...], where each sublist is an option to withdraw cash,
-                  and reading as a: quantity of 100s, b: quantity of 50s
-                  and c: quantity of 20-real bills available.
+                  and reading as a: quantity of 100s, b: quantity of 50s,
+                  c: quantity of 20-real bills available and a,b,c are int.
 
         """
         counter = PaperMoneyCounter() # aux class
@@ -176,7 +178,7 @@ class User(object):
             remaining_cash = counter.remaining_cash_without_20s(remaining_cash)
 
             if counter.cash(qtt_100s, qtt_50s, qtt_20s) == amount:
-                options.append([qtt_100s, qtt_50s, qtt_20s])
+                options.append([int(qtt_100s), int(qtt_50s), int(qtt_20s)])
 
             # prioritizing 50-real bills
             qtt_100s = 0
@@ -189,7 +191,7 @@ class User(object):
 
             if counter.cash(qtt_100s, qtt_50s, qtt_20s) == amount:
                 if not(options[0] == [qtt_100s, qtt_50s, qtt_20s]):
-                    options.append([qtt_100s, qtt_50s, qtt_20s])
+                    options.append([int(qtt_100s), int(qtt_50s), int(qtt_20s)])
 
             # prioritizing 20-real bills
             qtt_100s = 0
@@ -201,7 +203,7 @@ class User(object):
             if counter.cash(qtt_100s, qtt_50s, qtt_20s) == amount:
                 if not(options[0] == [qtt_100s, qtt_50s, qtt_20s]):
                     if not(options[1] == [qtt_100s, qtt_50s, qtt_20s]):
-                        options.append([qtt_100s, qtt_50s, qtt_20s])
+                        options.append([int(qtt_100s), int(qtt_50s), int(qtt_20s)])
 
             return options
 
@@ -481,7 +483,7 @@ class Persistence(object):
 
         cursor.executemany('''
         UPDATE users
-        SET balance=?)
+        SET balance=?
         WHERE id=?;
         ''', users_data)
 
