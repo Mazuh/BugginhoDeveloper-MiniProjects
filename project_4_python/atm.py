@@ -519,3 +519,28 @@ class Persistence(object):
             self.__users[row[2]].append_register((row[1], True))
 
         conn.close()
+
+
+
+    def find_user(self, agency=None, account=None):
+        """ Search for a registered user with these BOTH matching agency and account attributes.
+        Don't worry about SQL injection, this searching is executed withing already loaded users,
+        so there's no use of SQL here.
+
+        Args:
+            agency (str): Agency name of wanted user (recomended: use upper case only).
+            account (str): Account name of wanted user (recommended: use upper case only).
+
+        Returns:
+            User: Found user, or None if there's no matching user.
+
+        """
+        if agency is None or account is None:
+            return None
+
+        for i in self.__users:
+            user = self.__users[i]
+            if user.get_agency() == agency and user.get_account() == account:
+                return self.__users[i]
+
+        return None
