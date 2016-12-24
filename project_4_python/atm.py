@@ -36,7 +36,9 @@ class User(object):
             account  (str): Account identification code.
             password (str): Password MD5 hash, put None if it's unknown.
             balance  (num): Balance in R$, put None if it's unknown.
-            history (list): A list of balance transaction records, put None if it's unknown.
+            history (list): A list of tuples representing balance transaction records,
+                            put None if it's unknown or empty.
+                            List format: [(register string, True if it's a saved register), ...]
         """
         self.__agency = agency
         self.__account = account
@@ -62,6 +64,12 @@ class User(object):
         """
         self.__is_logged_in = self.__password == self.str_to_hash(password_str)
         return self.__is_logged_in
+
+
+
+    def log_out(self):
+        """ Exit this bank account, ie, removes active rights to do some stuff. """
+        self.__is_logged_in = False
 
 
 
@@ -225,8 +233,29 @@ class User(object):
         if user_to:
             register += ' to ' + user_to.get_account() + '/' + user_to.get_agency()
 
-        self.__history.append(register)
+        self.__history.append((register, False))
         return register
+
+
+
+    def append_register(self, register):
+        """ Append an already saved register to this user's history.
+
+        Args:
+            register (tuple): an item to append in history attribute that, following
+                              construct format, was already been saved.
+
+        Returns:
+            bool: True if has been appended, False otherwise.
+
+        """
+        register_str, is_saved = register # pylint: disable=I0011,W0612
+
+        if is_saved:
+            self.__history.append(register)
+            return True
+
+        return False
 
 
 
@@ -300,9 +329,9 @@ class User(object):
         """ Get history of user's transactions.
 
         Returns:
-            list: User's transaction strings.
+            list: Just a copy of User's history in constructed format.
         """
-        return self.__history
+        return self.__history[:]
 
 # ..............................................................
 
@@ -374,6 +403,8 @@ class Persistence(object):
         an initial script for db installation. """
         if not self.is_installed():
             self.install()
+        else:
+            self.load_users()
 
 
 
@@ -402,7 +433,7 @@ class Persistence(object):
         );
         ''')
 
-        # inserting a few users by default (there's no sign up requirement for this app)...
+        # inserting a few users by default (there's no 'sign up' requirement for this app)...
 
         hasher = User('', '', '')
         users_data = [
@@ -415,7 +446,7 @@ class Persistence(object):
 
         cursor.executemany('''
         INSERT INTO users (agency, account, password, balance)
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?);
         ''', users_data)
 
         conn.commit()
@@ -433,29 +464,43 @@ class Persistence(object):
 
 
     def update_users(self):
-        """ Update all current users balance and history in database using list attribute. """
+        """ Update all current users balance and history in database using list attribute.
+        There's basically no security against SQL injection, due to there's no espected
+        input string (the existents here are auto builded by this script using numeric inputs) """
         conn = sqlite3.connect(self.__DB)
         cursor = conn.cursor()
 
         users_data = []
-        for key, user in self.__users.items():
+        unsaved_histories_data = []
+        for key, user in self.__users.items(): # here, key it's actually users id
             users_data.append((user.get_balance(), key))
+            for register in user.get_history():
+                register_str, is_saved = register
+                if not is_saved:
+                    unsaved_histories_data.append((register_str, key))
 
         cursor.executemany('''
         UPDATE users
         SET balance=?)
-        WHERE id=?
+        WHERE id=?;
         ''', users_data)
 
-        # TODO: update history, maybe using marks for uncommited registers in list.
+        cursor.executemany('''
+        INSERT INTO history (register, owner)
+        VALUES (?, ?);
+        ''', unsaved_histories_data)
 
         conn.commit()
         conn.close()
+
+        self.load_users() # REALOADING!!! Pew, pew, pew, pew, pew...
 
 
 
     def load_users(self):
         """ Load all database rows and put their data in list attribute. """
+        self.__users = {}
+
         conn = sqlite3.connect(self.__DB)
         cursor = conn.cursor()
 
@@ -466,6 +511,11 @@ class Persistence(object):
         for row in cursor.fetchall():
             self.__users[row[0]] = User(row[1], row[2], row[3], row[4])
 
-        # TODO: load history
+        cursor.execute('''
+        SELECT * FROM history;
+        ''')
+
+        for row in cursor.fetchall():
+            self.__users[row[2]].append_register((row[1], True))
 
         conn.close()
