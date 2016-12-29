@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 class User(object):
-    """ Bank user. Can log in and do stuff or just act as a passive object.
+    """ Bank user. Can log in and do some actions or just act as a passive object.
     Another class must be used to persist these instances in local storage. """
 
     ACTIONS = { # for later registration in history attribute
@@ -36,7 +36,7 @@ class User(object):
             agency   (str): Agency identification code.
             account  (str): Account identification code.
             password (str): Password MD5 hash, put None if it's unknown.
-            balance  (num): Balance in R$, put None if it's unknown.
+            balance  (num): Balance in $, put None if it's unknown.
             history (list): A list of tuples representing balance transaction records,
                             put None if it's unknown or empty.
                             List format: [(register string, True if it's a saved register), ...]
@@ -69,7 +69,7 @@ class User(object):
 
 
     def log_out(self):
-        """ Exit this bank account, ie, removes active rights to do some stuff. """
+        """ Exit this bank account, ie, removes active rights to do some action. """
         self.__is_logged_in = False
 
 
@@ -79,7 +79,7 @@ class User(object):
         If something goes wrong, a fatal error will be triggered.
 
         Args:
-            amount        (num): amount of cash in R$ to deposit.
+            amount        (num): amount of cash in $ to deposit.
             another_user (User): if it's depositing in another user account then
                                  put its instance here, otherwise leave it as None.
 
@@ -105,8 +105,8 @@ class User(object):
         This is a private method, that requires previous authentication.
 
         Args:
-            amount       (num): Cash in R$ to discount from this instance user
-                                and to increase in another user account.
+            amount       (num): Cash in $ to discount from this instance user
+                                and increase in another user account.
             another_use (User): Another use to receive this transfering amount of cash.
 
         Returns:
@@ -125,16 +125,16 @@ class User(object):
 
     def withdraw_cash(self, qtt_100s, qtt_50s, qtt_20s):
         """ Withdraw cash. Those args should be obtained throught options_to_withdraw function.
-        Also, there are two limits: R$1000,00 or the balance (the lower one).
+        Also, there are two limits: $1000,00 or the balance (the lower one).
         This is a private method, that requires previous authentication.
 
         Args:
-            qtt_100s (int): quantity of 100-real bills
-            qtt_50s  (int): quantity of 50-real bills
-            qtt_20s  (int): quantity of 20-real bills
+            qtt_100s (int): quantity of 100-dollar bills
+            qtt_50s  (int): quantity of 50-dollar bills
+            qtt_20s  (int): quantity of 20-dollar bills
 
         Returns:
-            bool: True if the cash has been withdraw, False otherwise.
+            bool: True if the cash has been withdrawn, False otherwise.
 
         """
         amount = PaperMoneyCounter().cash(qtt_100s, qtt_50s, qtt_20s)
@@ -148,8 +148,8 @@ class User(object):
 
 
     def options_to_withdraw(self, amount):
-        """ Check options to withdraw an amount of cash. Can't be more than R$1000,00 and
-        should be 'printed' in 20, 50 and/or 100-real bills.
+        """ Check options to withdraw an amount of cash. Can't be more than $1000,00 and
+        should be 'printed' in 20, 50 and/or 100-dollar bills.
 
         Args:
             amount (num): Desired amount of cash to withdraw.
@@ -159,7 +159,7 @@ class User(object):
             list: If the requeriments to withdraw were accomplished, a list in format
                   [[a, b, c], ...], where each sublist is an option to withdraw cash,
                   and reading as a: quantity of 100s, b: quantity of 50s,
-                  c: quantity of 20-real bills available and a,b,c are int.
+                  c: quantity of 20-dollar bills available and a,b,c are int.
 
         """
         counter = PaperMoneyCounter() # aux class
@@ -167,7 +167,7 @@ class User(object):
         remaining_cash = 0 # aux var
 
         if (amount % 20 == 0 or amount % 50 == 0) and (amount <= 1000): # is it allowed to withdraw?
-            # prioritizing 100-real bills
+            # prioritizing 100-dollar bills
             qtt_100s = counter.how_many_100s(amount)
             remaining_cash = counter.remaining_cash_without_100s(amount)
 
@@ -180,7 +180,7 @@ class User(object):
             if counter.cash(qtt_100s, qtt_50s, qtt_20s) == amount:
                 options.append([int(qtt_100s), int(qtt_50s), int(qtt_20s)])
 
-            # prioritizing 50-real bills
+            # prioritizing 50-dollar bills
             qtt_100s = 0
 
             qtt_50s = counter.how_many_50s(amount)
@@ -193,7 +193,7 @@ class User(object):
                 if not(options[0] == [qtt_100s, qtt_50s, qtt_20s]):
                     options.append([int(qtt_100s), int(qtt_50s), int(qtt_20s)])
 
-            # prioritizing 20-real bills
+            # prioritizing 20-dollar bills
             qtt_100s = 0
 
             qtt_50s = 0
@@ -207,7 +207,7 @@ class User(object):
 
             return options
 
-        return None # it wasn't allowed to withdraw
+        return None # if it wasn't allowed to withdraw
 
 
 
@@ -218,19 +218,19 @@ class User(object):
             action   (str): An adequate value from ACTIONS dictionary attribute.
             amount   (num): Amount of money being moved in this operation.
             user_to (User): Another user as a target, eg: transfering money from this
-                            user to this argumented user.
+                            user to the argumented user.
 
         Returns:
-            str: Builded operation string added to this user history,
-                 in format 'd/m/a - [account]/[agency] [action] R$[amount]'
-                 or 'd/m/a - [account1]/[agency1] [action] R$[amount] to [account2]/[agency2]'.
+            str: Built operation string added to this user history,
+                 in format 'd/m/y - [account]/[agency] [action] $[amount]'
+                 or 'd/m/y - [account1]/[agency1] [action] $[amount] to [account2]/[agency2]'.
 
         """
         now = datetime.now()
 
         register = str(now.day) + "/" + str(now.month) + "/" + str(now.year) + ' - '
         register += self.__account + '/' + self.__agency
-        register += ' ' + action + ' R$' + str(amount)
+        register += ' ' + action + ' $' + str(amount)
 
         if user_to:
             register += ' to ' + user_to.get_account() + '/' + user_to.get_agency()
@@ -241,7 +241,7 @@ class User(object):
 
 
     def append_register(self, register):
-        """ Append an already saved register to this user's history.
+        """ Append an already saved register to this user history.
 
         Args:
             register (tuple): an item to append in history attribute that, following
@@ -265,7 +265,7 @@ class User(object):
         """ Generate a hash of a string param using md5 algorithm
 
         Args:
-            param (str): The content string for hashing.
+            param (str): The string content for hashing.
 
         Returns:
             str: A hash, generated by a md5 algorithm, using the parameter.
@@ -295,10 +295,10 @@ class User(object):
 
 
     def get_balance(self):
-        """ Consult balance in R$.
+        """ Consult balance in $.
 
         Returns:
-            num: This user's balance, None for unauthorized operation.
+            num: This user balance, None for unauthorized operation.
         """
         if self.is_logged_in:
             return self.__balance
@@ -342,49 +342,49 @@ class PaperMoneyCounter(object):
     """ Can do some counts about paper money. Aux class. """
 
     def cash(self, qtt_100s, qtt_50s, qtt_20s):
-        """ Return how much money there is by assembling 100s, 50s and 20-real bills quantities.
+        """ Return how much money there is by assembling 100s, 50s and 20-dollar bills quantities.
         """
         return (qtt_100s * 100) + (qtt_50s * 50) + (qtt_20s * 20)
 
 
 
     def how_many_100s(self, amount):
-        """ Return how many 100-real bill can be printed from this amount of cash.
+        """ Return how many 100-dollar bill can be printed from this amount of cash.
         """
         return amount // 100
 
 
 
     def remaining_cash_without_100s(self, amount):
-        """ Return how much cash remains after using a maximum quantity of 100-real bills.
+        """ Return how much cash remains after using the maximum quantity of 100-dollar bills.
         """
         return amount % 100
 
 
 
     def how_many_50s(self, amount):
-        """ Return how many 50-real bill can be printed from this amount of cash.
+        """ Return how many 50-dollar bill can be printed from this amount of cash.
         """
         return amount // 50
 
 
 
     def remaining_cash_without_50s(self, amount):
-        """ Return how much cash remains after using a maximum quantity of 50-real bills.
+        """ Return how much cash remains after using the maximum quantity of 50-dollar bills.
         """
         return amount % 50
 
 
 
     def how_many_20s(self, amount):
-        """ Return how many 20-real bill can be printed from this amount of cash.
+        """ Return how many 20-dollar bill can be printed from this amount of cash.
         """
         return amount // 20
 
 
 
     def remaining_cash_without_20s(self, amount):
-        """ Return how much cash remains after using a maximum quantity of 20-real bills.
+        """ Return how much cash remains after using the maximum quantity of 20-dollar bills.
         """
         return amount % 20
 
@@ -435,7 +435,7 @@ class Persistence(object):
         );
         ''')
 
-        # inserting a few users by default (there's no 'sign up' requirement for this app)...
+        # inserting a few users by default (there isn't 'sign up' requirement for this app)...
 
         hasher = User('', '', '')
         users_data = [
@@ -468,7 +468,7 @@ class Persistence(object):
     def update_users(self):
         """ Update all current users balance and history in database using list attribute.
         There's basically no security against SQL injection, due to there's no espected
-        input string (the existents here are auto builded by this script using numeric inputs) """
+        input string (the existents here are auto built by this script using numeric inputs) """
         conn = sqlite3.connect(self.__DB)
         cursor = conn.cursor()
 
@@ -495,7 +495,7 @@ class Persistence(object):
         conn.commit()
         conn.close()
 
-        self.load_users() # REALOADING!!! Pew, pew, pew, pew, pew...
+        self.load_users() # RELOADING!!! Pew, pew, pew, pew, pew...
 
 
 
@@ -526,11 +526,11 @@ class Persistence(object):
 
     def find_user(self, agency=None, account=None):
         """ Search for a registered user with these BOTH matching agency and account attributes.
-        Don't worry about SQL injection, this searching is executed withing already loaded users,
+        Don't worry about SQL injection, this searching is executed with already loaded users,
         so there's no use of SQL here.
 
         Args:
-            agency (str): Agency name of wanted user (recomended: use upper case only).
+            agency (str): Agency name of wanted user (recommended: use upper case only).
             account (str): Account name of wanted user (recommended: use upper case only).
 
         Returns:
