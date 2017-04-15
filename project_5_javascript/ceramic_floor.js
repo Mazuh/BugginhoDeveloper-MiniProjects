@@ -15,6 +15,7 @@ function updateInformation(){
         return false;
     
     // TODO
+    calcTiles();
 
     return false;
 }
@@ -47,8 +48,18 @@ function clearAllFields(){
 // calculation functions
 
 // amount of tiles you gonna need
+// also update dom output fields
 function calcTiles(){
+    var eachTileArea = tileW * tileH;
+    var floorArea = floorW * floorH;
 
+    // TODO: can it be converted into a closed form instead of a loop? maybe using ceiling or floor
+    var n = 0;
+    while(n*eachTileArea < floorArea){
+        n++;
+    }
+
+    document.getElementById("tilesQtt").innerHTML = n;
 }
 
 // how many of them will be sliced
