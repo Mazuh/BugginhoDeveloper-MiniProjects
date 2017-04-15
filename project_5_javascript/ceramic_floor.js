@@ -19,6 +19,8 @@ function updateInformation(){
     return false;
 }
 
+// dom functions
+
 // update input variables from the dom form
 // returns true if the values are all numerically not empty (see constants list), 
 //         false otherwise
@@ -40,4 +42,26 @@ function clearAllFields(){
     document.getElementById("tileH").value  = "";
 
     return false;
+}
+
+// calculation functions
+
+// amount of tiles you gonna need
+function calcTiles(){
+
+}
+
+// how many of them will be sliced
+function calcSlices(){
+
+}
+
+// quantity of slices that can be reused
+function calcReusedSlices(){
+
+}
+
+// best orientation for the tiles
+function calcBestOrientations(){
+
 }
