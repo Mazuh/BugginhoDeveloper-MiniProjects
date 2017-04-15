@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<head>
+    <title>Ceramic floor</title>
+</head>
+<body>
+    <header>
+        <h1>Ceramic floor</h1>
+        <h2>What does it do?</h2>
+        <p>It helps construction workers to perform their duty of putting ceramic on floor.</p>
+    </header>
+    <form>
+        <h2>Input</h2>
+        <p><small>(Use only one unit measure for all fields below.)</small></p>
+        <p>About the floor size...</p>
+        <label for="floorW">Width: </label>
+        <input id="floorW" type="number" min="0" autofocus/>
+        <label for="floorH">Height: </label>
+        <input id="floorH" type="number" min="0"/>
+        <br/>
+        <p>And the measures of each tile...</p>
+        <label for="tileW">Width: </label>
+        <input id="tileW" type="number" min="0"/>
+        <label for="tileH">Height: </label>
+        <input id="tileH" type="number" min="0"/>
+        <p>You can <a href="#" onclick="clearAllFields()">clear all fields</a> 
+        or <a href="#" onclick="updateInformation()">update them</a>.</p>
+    </form>
+    <div>
+        <h2>Output</h2>
+        <p>There are a few useful information.</p>
+        <ul>
+            <li>Amount of tiles you gonna need: <strong><span id="tilesQtt">---</span></strong></li>
+            <li>How many of them will be sliced: <strong><span id="slicesQtt">---</span></strong></li>
+            <li>Quantity of slices that can be reused: <strong><span id="reusedSlicesQtt">---</span></strong></li>
+            <li>Best orientation for the tiles: <strong><span id="bestTilesOrientation">---</span></strong></li>
+        </ul>
+    </div>
+    <footer>
+        <p>~<br/>~<br/>~<br/>~<br/>~<br/>~<br/>:wq</p>
+    </footer>
+</body>
