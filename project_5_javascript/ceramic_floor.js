@@ -1,18 +1,24 @@
 
-// some constants
+// constants here
 const EMPTY = -1;
 
-// to store inputs
+// to store some input data
 var floorW = EMPTY,
     floorH = EMPTY,
-    tileW = EMPTY,
-    tileH = EMPTY;
+    tileW  = EMPTY,
+    tileH  = EMPTY;
+
+// to store information
+var eachTileArea = tileW  * tileH,
+    floorArea    = floorW * floorH;
 
 // main function, assembling all the others functions in a single routine
 // returns false everytime
 function updateInformation(){
     if (!retrieveInputData())
         return false;
+    
+    calcAreas();
     
     // TODO
     calcTiles();
@@ -30,7 +36,7 @@ function retrieveInputData(){
     floorH = parseInt(document.getElementById("floorH").value);
     tileW  = parseInt(document.getElementById("tileW").value);
     tileH  = parseInt(document.getElementById("tileH").value);
-    
+
     return (floorW > EMPTY) && (floorW > EMPTY) && (floorW > EMPTY) && (floorW > EMPTY);
 }
 
@@ -45,14 +51,17 @@ function clearAllFields(){
     return false;
 }
 
-// calculation functions
+// calculation functions, they're all assuming that stored variables are already sanitized
+
+// calculate and store in global variables the areas of the whole and each tile
+function calcAreas(){
+    eachTileArea = tileW  * tileH;
+    floorArea    = floorW * floorH;
+}
 
 // amount of tiles you gonna need
 // also update dom output fields
 function calcTiles(){
-    var eachTileArea = tileW * tileH;
-    var floorArea = floorW * floorH;
-
     // TODO: can it be converted into a closed form instead of a loop? maybe using ceiling or floor
     var n = 0;
     while(n*eachTileArea < floorArea){
@@ -64,7 +73,7 @@ function calcTiles(){
 
 // how many of them will be sliced
 function calcSlices(){
-
+    //var tilesQtt = parseInt(document.getElementById("tilesQtt").innerHTML);
 }
 
 // quantity of slices that can be reused
